@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import './utils/color_palette.dart';
+import '../../utils/color_palettes.dart';
 
 class DetailBukuScreen extends StatelessWidget {
   const DetailBukuScreen({super.key});

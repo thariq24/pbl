@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'detail_buku_screen.dart';
-import 'pengaturan_audio_screen.dart';
+import 'books/detail_buku_screen.dart';
+import 'audio/pengaturan_audio_screen.dart';
 
 class TestFiturScreen extends StatelessWidget {
   const TestFiturScreen({super.key});
