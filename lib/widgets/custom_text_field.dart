@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/color_palettes.dart';
 import '../utils/text_styles.dart';
-import '../utils/app_constants.dart';
+import 'app_constants.dart';
 
 /// Custom text field reusable dengan berbagai konfigurasi
 class CustomTextField extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/color_palettes.dart';
 import '../utils/text_styles.dart';
-import '../utils/app_constants.dart';
+import 'app_constants.dart';
 import 'book_card.dart';
 import 'empty_state.dart';
 import 'loading_widget.dart';

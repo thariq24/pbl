@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/color_palettes.dart';
 import '../utils/text_styles.dart';
-import '../utils/app_constants.dart';
+import 'app_constants.dart';
 
 /// Widget untuk menampilkan kondisi data kosong
 class EmptyState extends StatelessWidget {
