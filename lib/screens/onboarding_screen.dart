@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_constants.dart';
+import '../utils/text_styles.dart';
+import '../utils/color_palettes.dart';
 import 'auth/login_screen.dart';
 import 'auth/registrasi_screen.dart';
 
@@ -14,7 +17,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void nextPage() {
     _pageController.nextPage(
-      duration: const Duration(milliseconds: 300),
+      duration: AppConstants.animationNormal,
       curve: Curves.easeInOut,
     );
   }
@@ -28,7 +31,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFD9E1F1),
+      backgroundColor: AppColors.lavender,
       body: PageView(
         controller: _pageController,
         children: [
@@ -53,40 +56,46 @@ class OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingNormal),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 60),
-          const Text(
+          const SizedBox(height: AppConstants.spaceXXXLarge),
+          Text(
             'Selamat Datang',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: AppTextStyles.h1.copyWith(
+              color: AppColors.oxfordBlue,
+            ),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: AppConstants.spaceSmall),
+          Text(
             'Buku favoritmu, kini bersuara.\n'
             'Baca, dengarkan, dan nikmati\n'
             'cerita di mana saja.',
-            style: TextStyle(fontSize: 16),
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.spaceCadet,
+            ),
           ),
-          const SizedBox(height: 45),
-
-Transform.translate(
-  offset: const Offset(16, 0),
-  child: Image.asset(
-    'assets/tes.jpeg',
-    width: 340,
-    height: 220,
-    fit: BoxFit.fill,
-    alignment: Alignment.center,
-  ),
-),
-
-const SizedBox(height: 50),
-          const SizedBox(height: 50),
-          ElevatedButton(
-            onPressed: onNext,
-            child: const Text('Mulai Menjelajahi'),
+          const SizedBox(height: AppConstants.spaceXXLarge),
+          Transform.translate(
+            offset: const Offset(AppConstants.paddingNormal, 0),
+            child: Image.asset(
+              'assets/tes.jpeg',
+              width: 340,
+              height: 220,
+              fit: BoxFit.fill,
+              alignment: Alignment.center,
+            ),
+          ),
+          const SizedBox(height: AppConstants.spaceXXXLarge),
+          const SizedBox(height: AppConstants.spaceXXLarge),
+          SizedBox(
+            width: double.infinity,
+            height: AppConstants.buttonHeightNormal,
+            child: ElevatedButton(
+              onPressed: onNext,
+              child: const Text('Mulai Menjelajahi'),
+            ),
           ),
         ],
       ),
@@ -106,40 +115,46 @@ class DiscoverPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingNormal),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 60),
-          const Text(
+          const SizedBox(height: AppConstants.spaceXXXLarge),
+          Text(
             'Discover',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: AppTextStyles.h1.copyWith(
+              color: AppColors.oxfordBlue,
+            ),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: AppConstants.spaceSmall),
+          Text(
             'Temukan berbagai buku menarik\n'
             'dan nikmati pengalaman membaca\n'
             'dengan cara yang lebih menyenangkan.',
-            style: TextStyle(fontSize: 16),
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.spaceCadet,
+            ),
           ),
-           const SizedBox(height: 45),
-
-Transform.translate(
-  offset: const Offset(-16, 0),
-  child: Image.asset(
-    'assets/tes1.jpeg',
-    width: 340,
-    height: 220,
-    fit: BoxFit.fill,
-    alignment: Alignment.center,
-  ),
-),
-
-const SizedBox(height: 50),
-          const SizedBox(height: 50),
-          ElevatedButton(
-            onPressed: onNext,
-            child: const Text('Lanjutkan'),
+          const SizedBox(height: AppConstants.spaceXXLarge),
+          Transform.translate(
+            offset: const Offset(-AppConstants.paddingNormal, 0),
+            child: Image.asset(
+              'assets/tes1.jpeg',
+              width: 340,
+              height: 220,
+              fit: BoxFit.fill,
+              alignment: Alignment.center,
+            ),
+          ),
+          const SizedBox(height: AppConstants.spaceXXXLarge),
+          const SizedBox(height: AppConstants.spaceXXLarge),
+          SizedBox(
+            width: double.infinity,
+            height: AppConstants.buttonHeightNormal,
+            child: ElevatedButton(
+              onPressed: onNext,
+              child: const Text('Lanjutkan'),
+            ),
           ),
         ],
       ),
@@ -157,57 +172,73 @@ class ConnectPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingNormal),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 60),
-          const Text(
+          const SizedBox(height: AppConstants.spaceXXXLarge),
+          Text(
             'Connect',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: AppTextStyles.h1.copyWith(
+              color: AppColors.oxfordBlue,
+            ),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: AppConstants.spaceSmall),
+          Text(
             'Buat akun dan mulai nikmati\n'
             'pengalaman membaca bersama\n'
             'BukuBicara.',
-            style: TextStyle(fontSize: 16),
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.spaceCadet,
+            ),
           ),
-          const SizedBox(height: 45),
+          const SizedBox(height: AppConstants.spaceXXLarge),
           Image.asset(
             'assets/dino.png',
             width: 240,
             height: 220,
             fit: BoxFit.cover,
           ),
-          const SizedBox(height: 40),
-         ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const RegisterScreen(),
-      ),
-    );
-  },
-  child: const Text('Register'),
-),
-          const SizedBox(height: 10),
-          ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LoginScreen(),
-      ),
-    );
-  },
-  child: const Text('Login'),
-),
-          const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () {},
-            child: const Text('Login dengan Google'),
+          const SizedBox(height: AppConstants.spaceXXLarge),
+          SizedBox(
+            width: double.infinity,
+            height: AppConstants.buttonHeightNormal,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterScreen(),
+                  ),
+                );
+              },
+              child: const Text('Register'),
+            ),
+          ),
+          const SizedBox(height: AppConstants.spaceSmall),
+          SizedBox(
+            width: double.infinity,
+            height: AppConstants.buttonHeightNormal,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginScreen(),
+                  ),
+                );
+              },
+              child: const Text('Login'),
+            ),
+          ),
+          const SizedBox(height: AppConstants.spaceSmall),
+          SizedBox(
+            width: double.infinity,
+            height: AppConstants.buttonHeightNormal,
+            child: ElevatedButton(
+              onPressed: () {},
+              child: const Text('Login dengan Google'),
+            ),
           ),
         ],
       ),

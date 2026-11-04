@@ -6,6 +6,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/app_constants.dart';
 import '../../widgets/loading_widget.dart';
+import '../home/home_screen.dart';
 import 'forgot_password_screen.dart';
 import 'registrasi_screen.dart';
 
@@ -252,14 +253,15 @@ class _LoginScreenState extends State<LoginScreen> {
         const SnackBar(
           content: Text('Login berhasil!'),
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
         ),
       );
 
-      // TODO: Navigate to home screen
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => const HomeScreen()),
-      // );
+      // Navigate to home screen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
     }
   }
 

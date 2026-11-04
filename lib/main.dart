@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/onboarding_screen.dart';
+// import 'screens/home/home_screen.dart'; // Uncomment for testing
 import 'utils/color_palettes.dart';
 
 void main() {
@@ -191,7 +192,9 @@ class MyApp extends StatelessWidget {
       ),
       
       // Home screen
+      // Use OnboardingScreen for first launch, HomeScreen for testing main app
       home: const OnboardingScreen(),
+      // home: const HomeScreen(), // Uncomment for testing katalog & navigation
       
       // Disable debug banner
       debugShowMaterialGrid: false,

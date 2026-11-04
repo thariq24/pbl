@@ -1,13 +1,17 @@
 
 import 'package:flutter/material.dart';
 import '../../utils/color_palettes.dart';
+import '../../providers/audio_player_provider.dart';
+import '../../widgets/audio_player_overlay.dart';
+import '../audio/audio_player_screen.dart';
 
 class DetailBukuScreen extends StatelessWidget {
   const DetailBukuScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AudioPlayerOverlay(
+      child: Scaffold(
       backgroundColor: AppColors.lavender,
       appBar: AppBar(
         backgroundColor: AppColors.spaceCadet,
@@ -156,10 +160,7 @@ class DetailBukuScreen extends StatelessWidget {
                     title: 'Audio',
                     subtitle: 'Dengarkan buku',
                     duration: '12 jam 30 menit',
-                    onTap: () => _showMessage(
-                      context,
-                      'Audio buku belum dihubungkan.',
-                    ),
+                    onTap: () => _playAudioBook(context),
                   ),
                 ),
               ],
@@ -199,12 +200,30 @@ class DetailBukuScreen extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 
   static void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+
+  static void _playAudioBook(BuildContext context) {
+    // Trigger audio player provider
+    final audioProvider = AudioPlayerProvider();
+    audioProvider.playAudio(
+      bookTitle: 'Hujan',
+      author: 'Tere Liye',
+      coverImage: 'assets/cover-buku-hujan.jpg',
+    );
+
+    // Navigate to full audio player screen
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const AudioPlayerScreen(),
+      ),
     );
   }
 }
@@ -259,6 +278,7 @@ class _FormatCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
+        height: 160, // Fixed height untuk simetris
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -268,6 +288,7 @@ class _FormatCard extends StatelessWidget {
           ),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
@@ -287,34 +308,46 @@ class _FormatCard extends StatelessWidget {
               subtitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
+                fontSize: 13,
                 color: AppColors.grey,
               ),
             ),
             if (duration != null) ...[
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.access_time_rounded,
-                    size: 14,
-                    color: AppColors.yinMnBlue,
-                  ),
-                  const SizedBox(width: 5),
-                  Flexible(
-                    child: Text(
-                      duration!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.yinMnBlue,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.jordyBlue.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 14,
+                      color: AppColors.yinMnBlue,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        duration!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.oxfordBlue,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ],
+            ] else
+              const SizedBox(height: 30), // Spacer untuk box tanpa duration
           ],
         ),
       ),

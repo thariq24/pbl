@@ -68,6 +68,7 @@ class BookCard extends StatelessWidget {
       child: SizedBox(
         width: dimensions['width'],
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Cover buku
@@ -210,38 +211,41 @@ class BookCard extends StatelessWidget {
   }
 
   Widget _buildInfo() {
-    return Row(
+    return Wrap(
+      spacing: AppConstants.spaceSmall,
+      runSpacing: AppConstants.spaceXSmall,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         // Rating
-        if (book.rating != null) ...[
-          const Icon(
-            Icons.star,
-            color: Colors.amber,
-            size: 14,
+        if (book.rating != null)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.star,
+                color: Colors.amber,
+                size: 14,
+              ),
+              const SizedBox(width: AppConstants.spaceXSmall),
+              Text(
+                book.rating!.toStringAsFixed(1),
+                style: AppTextStyles.labelSmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.oxfordBlue,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppConstants.spaceXSmall),
-          Text(
-            book.rating!.toStringAsFixed(1),
-            style: AppTextStyles.labelSmall.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.oxfordBlue,
-            ),
-          ),
-        ],
-
-        // Spacer jika ada rating dan category
-        if (book.rating != null && book.category != null)
-          const SizedBox(width: AppConstants.spaceSmall),
 
         // Category
         if (book.category != null)
-          Flexible(
-            child: Text(
-              book.category!,
-              style: AppTextStyles.labelSmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            book.category!,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.grey,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
       ],
     );
