@@ -6,6 +6,8 @@ import '../../widgets/book_card.dart';
 import '../../widgets/book_list.dart';
 import 'all_books_screen.dart';
 import '../books/detail_buku_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/auth_service.dart';
 
 class BerandaScreen extends StatefulWidget {
   const BerandaScreen({super.key});
@@ -54,6 +56,8 @@ class _BerandaScreenState extends State<BerandaScreen> {
       hasAudio: true,
     ),
   ];
+
+  final AuthService _authService = AuthService();
 
   // Dummy data untuk buku terbaru
   final List<BookCardData> _recentBooks = [
@@ -137,29 +141,45 @@ class _BerandaScreenState extends State<BerandaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Section
-              Container(
-                padding: const EdgeInsets.all(AppConstants.paddingNormal),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppConstants.spaceSmall),
-                    Text(
-                      'Selamat Datang!',
-                      style: AppTextStyles.h2.copyWith(
-                        color: AppColors.oxfordBlue,
+              
+            // Header Section
+            Container(
+              padding: const EdgeInsets.all(AppConstants.paddingNormal),
+              child: StreamBuilder<User?>(
+                stream: _authService.userChanges,
+                builder: (context, snapshot) {
+                  final displayName = snapshot.data?.displayName?.trim();
+
+                  final greeting = displayName != null && displayName.isNotEmpty
+                      ? 'Halo, $displayName!'
+                      : 'Selamat Datang!';
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: AppConstants.spaceSmall),
+
+                      Text(
+                        greeting,
+                        style: AppTextStyles.h2.copyWith(
+                          color: AppColors.oxfordBlue,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppConstants.spaceXSmall),
-                    Text(
-                      'Temukan ribuan audiobook menarik',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.spaceCadet,
+
+                      const SizedBox(height: AppConstants.spaceXSmall),
+
+                      Text(
+                        'Senang melihatmu kembali. Yuk, temukan audiobook menarik!',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.spaceCadet,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                },
               ),
+            ),
+
 
               const SizedBox(height: AppConstants.spaceSmall),
 

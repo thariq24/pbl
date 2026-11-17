@@ -6,7 +6,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/app_constants.dart';
 import '../../widgets/loading_widget.dart';
-import 'verify_otp_screen.dart';
+import 'verify_otp_screen';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});

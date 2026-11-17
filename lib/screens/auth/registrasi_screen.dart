@@ -7,7 +7,8 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/app_constants.dart';
 import '../../widgets/loading_widget.dart';
 import 'login_screen.dart';
-import 'verify_otp_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,8 +17,10 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
+
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -237,101 +240,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       const SizedBox(height: AppConstants.spaceXLarge),
 
-                      // Divider with text
-                      Row(
-                        children: [
-                          const Expanded(child: Divider()),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppConstants.paddingSmall,
-                            ),
-                            child: Text(
-                              'or register with',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.grey,
-                              ),
-                            ),
-                          ),
-                          const Expanded(child: Divider()),
-                        ],
-                      ),
-
-                      const SizedBox(height: AppConstants.spaceNormal),
-
-                      // Google register button
-                      SizedBox(
-                        width: double.infinity,
-                        height: AppConstants.buttonHeightNormal,
-                        child: OutlinedButton.icon(
-                          onPressed: _handleGoogleRegister,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.oxfordBlue,
-                            side: const BorderSide(
-                              color: AppColors.oxfordBlue,
-                              width: 1.5,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppConstants.radiusCircular,
-                              ),
-                            ),
-                          ),
-                          icon: Image.asset(
-                            'assets/icon/google.png',
-                            width: 20,
-                            height: 20,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.g_mobiledata,
-                                size: 24,
-                              );
-                            },
-                          ),
-                          label: Text(
-                            'Register with Google',
-                            style: AppTextStyles.buttonMedium.copyWith(
-                              color: AppColors.oxfordBlue,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: AppConstants.spaceXLarge),
-
                       // Login link
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Already have an account? ',
-                              style: AppTextStyles.bodySmall,
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginScreen(),
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                'Login',
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Sudah punya akun? ',
                                 style: AppTextStyles.bodySmall.copyWith(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.grey,
                                 ),
                               ),
-                            ),
-                          ],
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 0),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Login di sini',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.yinMnBlue,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
                       const SizedBox(height: AppConstants.spaceXLarge),
                     ],
@@ -349,56 +293,115 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      if (!_agreeToTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please agree to Terms of Service and Privacy Policy'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
+  
+  
 
-      setState(() => _isLoading = true);
-
-      // Simulasi register
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
-      // Navigate to OTP verification
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VerifyOTPScreen(
-            email: _emailController.text,
-            verificationType: OTPVerificationType.register,
-          ),
-        ),
-      );
-    }
+Future<void> _handleRegister() async {
+  if (!_formKey.currentState!.validate()) {
+    return;
   }
 
-  Future<void> _handleGoogleRegister() async {
-    setState(() => _isLoading = true);
+  if (!_agreeToTerms) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Please agree to Terms of Service and Privacy Policy',
+        ),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
 
-    // Simulasi Google register
-    await Future.delayed(const Duration(seconds: 2));
+  setState(() => _isLoading = true);
+
+  try {
+    await _authService.register(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    final fullName = [
+      _firstNameController.text.trim(),
+      _lastNameController.text.trim(),
+    ].where((name) => name.isNotEmpty).join(' ');
+
+    try {
+      await _authService.updateDisplayName(
+        displayName: fullName,
+      );
+
+      await _authService.sendEmailVerification();
+    } finally {
+      await _authService.logout();
+    }
 
     if (!mounted) return;
 
-    setState(() => _isLoading = false);
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Google register belum diimplementasikan'),
+        content: Text(
+          'Account created! Please verify your email before logging in.',
+        ),
+        backgroundColor: Colors.green,
       ),
     );
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
+  } on FirebaseAuthException catch (e) {
+    if (!mounted) return;
+
+    String message;
+
+    switch (e.code) {
+      case 'email-already-in-use':
+        message = 'Email ini sudah terdaftar.';
+        break;
+      case 'invalid-email':
+        message = 'Format email tidak valid.';
+        break;
+      case 'weak-password':
+        message = 'Password terlalu lemah.';
+        break;
+      case 'network-request-failed':
+        message = 'Periksa koneksi internet kamu.';
+        break;
+      case 'too-many-requests':
+        message = 'Terlalu banyak percobaan. Coba lagi nanti.';
+        break;
+      default:
+        message = e.message ?? 'Registrasi gagal. Silakan coba lagi.';
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Terjadi kesalahan: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
+}
+
+
 
   void _showTermsOfService() {
     showDialog(
