@@ -8,6 +8,7 @@ import '../../widgets/app_constants.dart';
 import '../../widgets/loading_widget.dart';
 import 'forgot_password_screen.dart';
 import 'registrasi_screen.dart';
+import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -237,31 +238,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+  if (_formKey.currentState!.validate()) {
+    setState(() => _isLoading = true);
 
-      // Simulasi login
-      await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      setState(() => _isLoading = false);
+    setState(() => _isLoading = false);
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login berhasil!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // TODO: Navigate to home screen
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => const HomeScreen()),
-      // );
-    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HomeScreen(),
+      ),
+    );
   }
+}
 
   Future<void> _handleGoogleLogin() async {
     setState(() => _isLoading = true);

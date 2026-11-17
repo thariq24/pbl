@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../../utils/color_palettes.dart';
+import '../audio/audio_player_screen.dart';
 
 class DetailBukuScreen extends StatelessWidget {
   const DetailBukuScreen({super.key});
@@ -143,10 +144,14 @@ class DetailBukuScreen extends StatelessWidget {
                     icon: Icons.menu_book,
                     title: 'Ebook',
                     subtitle: 'Baca buku',
-                    onTap: () => _showMessage(
-                      context,
-                      'Halaman baca ebook belum dihubungkan.',
-                    ),
+                    onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const AudioPlayerScreen(),
+    ),
+  );
+},
                   ),
                 ),
                 const SizedBox(width: 12),
