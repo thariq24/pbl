@@ -379,7 +379,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer>
         // Previous button (optional)
         if (widget.onPrevious != null)
           _buildControlButton(
-            icon: Icons.skip_previous_rounded,
+            icon: Icons.fast_rewind_rounded,
             onPressed: widget.onPrevious!,
             size: 24,
           ),
@@ -394,7 +394,7 @@ class _MiniAudioPlayerState extends State<MiniAudioPlayer>
         // Next button (optional)
         if (widget.onNext != null)
           _buildControlButton(
-            icon: Icons.skip_next_rounded,
+            icon: Icons.fast_forward_rounded,
             onPressed: widget.onNext!,
             size: 24,
           ),

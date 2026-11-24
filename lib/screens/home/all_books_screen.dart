@@ -1,4 +1,7 @@
+
 import 'package:flutter/material.dart';
+
+import '../../services/book_service.dart';
 import '../../utils/color_palettes.dart';
 import '../../utils/text_styles.dart';
 import '../../widgets/app_constants.dart';
@@ -27,14 +30,18 @@ class AllBooksScreen extends StatefulWidget {
 }
 
 class _AllBooksScreenState extends State<AllBooksScreen> {
+  final BookService _bookService = BookService();
+
   late List<BookCardData> _books;
   bool _isLoading = false;
-  String _sortBy = 'default'; // default, rating, title, author
+  String _sortBy = 'default';
 
   @override
   void initState() {
     super.initState();
-    _books = widget.initialBooks ?? [];
+
+    _books = List<BookCardData>.from(widget.initialBooks ?? []);
+
     if (_books.isEmpty) {
       _loadBooks();
     }
@@ -54,45 +61,72 @@ class _AllBooksScreenState extends State<AllBooksScreen> {
   Future<void> _loadBooks() async {
     setState(() => _isLoading = true);
 
-    // Simulasi load data dari API
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final books = await _bookService.getPublishedBooks().first;
 
-    // Dummy data - dalam implementasi real, ini dari API
-    final dummyBooks = _generateDummyBooks();
+      if (!mounted) return;
 
-    if (mounted) {
+      final bookCards = books.map((book) {
+        return BookCardData(
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          coverUrl: book.coverUrl,
+          rating: book.rating,
+          category: book.category,
+          hasAudio: book.hasAudio,
+        );
+      }).toList();
+
       setState(() {
-        _books = dummyBooks;
+        _books = bookCards;
+        _sortBooks();
         _isLoading = false;
       });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memuat daftar buku.'),
+        ),
+      );
     }
   }
 
-  List<BookCardData> _generateDummyBooks() {
-    // Generate 20 buku dummy
-    final categories = ['Horror', 'Romance', 'Fantasy', 'History', 'Biography', 'Philosophy'];
-    
-    return List.generate(20, (index) {
-      final category = categories[index % categories.length];
-      return BookCardData(
-        id: 'book_$index',
-        title: 'Book Title ${index + 1}',
-        author: 'Author Name ${index + 1}',
-        rating: 3.5 + (index % 15) * 0.1,
-        category: category,
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        hasAudio: index % 3 != 0,
-      );
-    });
-  }
+  // Membuka detail sesuai buku yang dipilih.
+  Future<void> _handleBookTap(BookCardData selectedBook) async {
+    try {
+      final book = await _bookService.getBookById(selectedBook.id);
 
-  void _handleBookTap(BookCardData book) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const DetailBukuScreen(),
-      ),
-    );
+      if (!mounted) return;
+
+      if (book == null || !book.isPublished) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Buku tidak ditemukan atau belum dipublikasikan.'),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DetailBukuScreen(book: book),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memuat detail buku. Silakan coba lagi.'),
+        ),
+      );
+    }
   }
 
   void _handleSort(String? value) {
@@ -107,19 +141,26 @@ class _AllBooksScreenState extends State<AllBooksScreen> {
   void _sortBooks() {
     switch (_sortBy) {
       case 'default':
-        // Reset to original order
         if (widget.listType == BookListType.popular) {
-          _books.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+          _books.sort(
+            (a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0),
+          );
         } else if (widget.listType == BookListType.recent) {
-          _books = _books.reversed.toList();
+          // Urutan awal Buku Terbaru sudah berasal dari Beranda.
+          // Jangan dibalik karena akan mengubah urutan terbaru.
         }
         break;
+
       case 'rating':
-        _books.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+        _books.sort(
+          (a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0),
+        );
         break;
+
       case 'title':
         _books.sort((a, b) => a.title.compareTo(b.title));
         break;
+
       case 'author':
         _books.sort((a, b) => a.author.compareTo(b.author));
         break;
@@ -134,7 +175,10 @@ class _AllBooksScreenState extends State<AllBooksScreen> {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.oxfordBlue),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.oxfordBlue,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -144,79 +188,32 @@ class _AllBooksScreenState extends State<AllBooksScreen> {
           ),
         ),
         actions: [
-          // Sort dropdown
           PopupMenuButton<String>(
-            icon: const Icon(Icons.sort, color: AppColors.oxfordBlue),
+            icon: const Icon(
+              Icons.sort,
+              color: AppColors.oxfordBlue,
+            ),
             onSelected: _handleSort,
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'default',
-                child: Row(
-                  children: [
-                    Icon(
-                      _sortBy == 'default' ? Icons.check : Icons.filter_list,
-                      size: AppConstants.iconSmall,
-                      color: AppColors.yinMnBlue,
-                    ),
-                    const SizedBox(width: AppConstants.spaceSmall),
-                    const Text('Default'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'rating',
-                child: Row(
-                  children: [
-                    Icon(
-                      _sortBy == 'rating' ? Icons.check : Icons.star,
-                      size: AppConstants.iconSmall,
-                      color: AppColors.yinMnBlue,
-                    ),
-                    const SizedBox(width: AppConstants.spaceSmall),
-                    const Text('Rating Tertinggi'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'title',
-                child: Row(
-                  children: [
-                    Icon(
-                      _sortBy == 'title' ? Icons.check : Icons.sort_by_alpha,
-                      size: AppConstants.iconSmall,
-                      color: AppColors.yinMnBlue,
-                    ),
-                    const SizedBox(width: AppConstants.spaceSmall),
-                    const Text('Judul A-Z'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'author',
-                child: Row(
-                  children: [
-                    Icon(
-                      _sortBy == 'author' ? Icons.check : Icons.person,
-                      size: AppConstants.iconSmall,
-                      color: AppColors.yinMnBlue,
-                    ),
-                    const SizedBox(width: AppConstants.spaceSmall),
-                    const Text('Penulis A-Z'),
-                  ],
-                ),
-              ),
+              _buildSortItem('default', 'Default', Icons.filter_list),
+              _buildSortItem('rating', 'Rating Tertinggi', Icons.star),
+              _buildSortItem('title', 'Judul A-Z', Icons.sort_by_alpha),
+              _buildSortItem('author', 'Penulis A-Z', Icons.person),
             ],
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Info bar
                 Container(
-                  padding: const EdgeInsets.all(AppConstants.paddingNormal),
+                  padding: const EdgeInsets.all(
+                    AppConstants.paddingNormal,
+                  ),
                   color: AppColors.white,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -240,7 +237,6 @@ class _AllBooksScreenState extends State<AllBooksScreen> {
 
                 const SizedBox(height: AppConstants.spaceSmall),
 
-                // Books Grid - Using BookList
                 Expanded(
                   child: _books.isEmpty
                       ? Center(
@@ -250,16 +246,22 @@ class _AllBooksScreenState extends State<AllBooksScreen> {
                               Icon(
                                 Icons.library_books_outlined,
                                 size: AppConstants.iconXXLarge,
-                                color: AppColors.grey.withValues(alpha: 0.5),
+                                color: AppColors.grey.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
-                              const SizedBox(height: AppConstants.spaceMedium),
+                              const SizedBox(
+                                height: AppConstants.spaceMedium,
+                              ),
                               Text(
                                 'Belum ada buku',
                                 style: AppTextStyles.h3.copyWith(
                                   color: AppColors.grey,
                                 ),
                               ),
-                              const SizedBox(height: AppConstants.spaceSmall),
+                              const SizedBox(
+                                height: AppConstants.spaceSmall,
+                              ),
                               Text(
                                 'Tidak ada buku untuk ditampilkan',
                                 style: AppTextStyles.bodyMedium.copyWith(
@@ -281,6 +283,27 @@ class _AllBooksScreenState extends State<AllBooksScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  PopupMenuItem<String> _buildSortItem(
+    String value,
+    String label,
+    IconData icon,
+  ) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(
+            _sortBy == value ? Icons.check : icon,
+            size: AppConstants.iconSmall,
+            color: AppColors.yinMnBlue,
+          ),
+          const SizedBox(width: AppConstants.spaceSmall),
+          Text(label),
+        ],
+      ),
     );
   }
 

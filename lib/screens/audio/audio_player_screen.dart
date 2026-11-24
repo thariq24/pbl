@@ -1,4 +1,9 @@
+
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../../providers/audio_player_provider.dart';
 import '../../utils/color_palettes.dart';
 import '../../utils/text_styles.dart';
 import '../../widgets/app_constants.dart';
@@ -12,67 +17,38 @@ class AudioPlayerScreen extends StatefulWidget {
 }
 
 class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
-  bool isPlaying = false;
-  double progress = 0.25; // 25% dari total durasi
-  double speed = 1.0;
+  final AudioPlayerProvider _audioProvider = AudioPlayerProvider();
 
-  // Simulasi highlight text yang sedang dibacakan
-  int highlightedParagraph = 1; // Index paragraf yang sedang dibacakan (0-based)
-
-  // Data buku
-  final String bookTitle = 'Hujan Bulan Juni';
-  final String bookAuthor = 'Sapardi Djoko Damono';
-  final String totalDuration = '10:10';
-  
-  // Konten buku (placeholder)
+  // Konten masih berupa placeholder.
+  // Sinkronisasi teks dengan audio akan dibuat pada tahap berikutnya.
   final List<String> bookContent = [
     'Tak ada yang lebih tabah dari hujan bulan Juni dirahasiakannya rintik rindunya kepada pohon berbunga itu.',
     'Tak ada yang lebih bijak dari hujan bulan Juni dihapusnya jejak-jejak kakinya yang ragu-ragu di jalan itu.',
     'Tak ada yang lebih arif dari hujan bulan Juni dibiarkannya yang tak terucapkan diserap akar pohon bunga itu.',
   ];
 
-  String get currentTime {
-    final duration = 610; // 10:10 dalam detik
-    final current = (duration * progress).toInt();
-    final minutes = current ~/ 60;
-    final seconds = current % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
+  int highlightedParagraph = 1;
 
   void _togglePlayPause() {
-    setState(() {
-      isPlaying = !isPlaying;
-    });
+    unawaited(_audioProvider.togglePlayPause());
   }
 
   void _onProgressChanged(double value) {
-    setState(() {
-      progress = value;
-    });
+    _audioProvider.updateProgress(value);
   }
 
-  void _previousChapter() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pindah ke bab sebelumnya (simulasi)'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+  void _skipBackward() {
+    unawaited(_audioProvider.skipBackward());
   }
 
-  void _nextChapter() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pindah ke bab berikutnya (simulasi)'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+  void _skipForward() {
+    unawaited(_audioProvider.skipForward());
   }
 
   void _showPlaylist() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Menampilkan daftar bab (simulasi)'),
+        content: Text('Daftar bab belum tersedia.'),
         duration: Duration(seconds: 1),
       ),
     );
@@ -89,24 +65,26 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.lavender,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header Section
-            _buildHeader(),
+    return ListenableBuilder(
+      listenable: _audioProvider,
+      builder: (context, child) {
+        return Scaffold(
+          backgroundColor: AppColors.lavender,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
 
-            // Book Content Area (Expanded untuk mengambil space tersisa)
-            Expanded(
-              child: _buildBookContentArea(),
+                Expanded(
+                  child: _buildBookContentArea(),
+                ),
+
+                _buildMiniAudioPlayer(),
+              ],
             ),
-
-            // Mini Audio Player (Fixed di bawah)
-            _buildMiniAudioPlayer(),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -118,7 +96,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       ),
       child: Row(
         children: [
-          // Back Button
           Container(
             decoration: BoxDecoration(
               color: AppColors.white.withValues(alpha: 0.7),
@@ -133,13 +110,12 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
           const SizedBox(width: AppConstants.spaceMedium),
 
-          // Title and Author
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  bookTitle,
+                  _audioProvider.bookTitle,
                   style: AppTextStyles.titleLarge.copyWith(
                     color: AppColors.oxfordBlue,
                   ),
@@ -148,7 +124,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                 ),
                 const SizedBox(height: AppConstants.spaceXSmall),
                 Text(
-                  bookAuthor,
+                  _audioProvider.author,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.spaceCadet,
                   ),
@@ -159,12 +135,15 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
             ),
           ),
 
-          // Headphone Illustration
           Container(
-            padding: const EdgeInsets.all(AppConstants.paddingSmall),
+            padding: const EdgeInsets.all(
+              AppConstants.paddingSmall,
+            ),
             decoration: BoxDecoration(
               color: AppColors.jordyBlue.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              borderRadius: BorderRadius.circular(
+                AppConstants.radiusMedium,
+              ),
             ),
             child: const Icon(
               Icons.headphones,
@@ -182,16 +161,19 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       margin: const EdgeInsets.symmetric(
         horizontal: AppConstants.paddingNormal,
       ),
-      padding: const EdgeInsets.all(AppConstants.paddingLarge),
+      padding: const EdgeInsets.all(
+        AppConstants.paddingLarge,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F0E8), // Abu-abu kehijauan lembut
-        borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
+        color: const Color(0xFFE8F0E8),
+        borderRadius: BorderRadius.circular(
+          AppConstants.radiusXLarge,
+        ),
       ),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ilustrasi kecil di kanan atas
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -205,11 +187,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
             const SizedBox(height: AppConstants.spaceNormal),
 
-            // Book Content dengan highlight
             ...bookContent.asMap().entries.map((entry) {
-              int idx = entry.key;
-              String paragraph = entry.value;
-              bool isHighlighted = idx == highlightedParagraph;
+              final idx = entry.key;
+              final paragraph = entry.value;
+              final isHighlighted = idx == highlightedParagraph;
 
               return Padding(
                 padding: const EdgeInsets.only(
@@ -236,12 +217,20 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   }
 
   Widget _buildMiniAudioPlayer() {
+    final progress = _audioProvider.progress;
+
     return Container(
-      margin: const EdgeInsets.all(AppConstants.paddingNormal),
-      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+      margin: const EdgeInsets.all(
+        AppConstants.paddingNormal,
+      ),
+      padding: const EdgeInsets.all(
+        AppConstants.paddingMedium,
+      ),
       decoration: BoxDecoration(
         color: AppColors.spaceCadet,
-        borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
+        borderRadius: BorderRadius.circular(
+          AppConstants.radiusXLarge,
+        ),
         boxShadow: [
           BoxShadow(
             color: AppColors.black.withValues(alpha: 0.2),
@@ -253,52 +242,29 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Top Row: Cover, Info, Settings
           Row(
             children: [
-              // Cover Buku
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.lavender,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
-                  child: Icon(
-                    Icons.menu_book,
-                    color: AppColors.yinMnBlue,
-                    size: AppConstants.iconLarge,
-                  ),
-                ),
-              ),
+              _buildCover(),
 
               const SizedBox(width: AppConstants.spaceMedium),
 
-              // Info Buku
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bookTitle,
+                      _audioProvider.bookTitle,
                       style: AppTextStyles.titleSmall.copyWith(
                         color: AppColors.white,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: AppConstants.spaceXSmall),
+                    const SizedBox(
+                      height: AppConstants.spaceXSmall,
+                    ),
                     Text(
-                      bookAuthor,
+                      _audioProvider.author,
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.jordyBlue,
                       ),
@@ -309,7 +275,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                 ),
               ),
 
-              // Settings Button
               IconButton(
                 icon: const Icon(Icons.settings),
                 color: AppColors.jordyBlue,
@@ -319,49 +284,82 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
             ],
           ),
 
+          if (_audioProvider.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _audioProvider.errorMessage!,
+                style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
           const SizedBox(height: AppConstants.spaceMedium),
 
-          // Control Buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.skip_previous),
-                color: AppColors.white,
-                iconSize: AppConstants.iconLarge,
-                onPressed: _previousChapter,
+              // Tombol mundur sesuai interval.
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Mundur ${_audioProvider.skipInterval} detik',
+                    icon: const Icon(Icons.fast_rewind_rounded),
+                    color: AppColors.white,
+                    iconSize: AppConstants.iconLarge,
+                    onPressed: _skipBackward,
+                  ),
+                ],
               ),
 
               const SizedBox(width: AppConstants.spaceSmall),
 
-              // Play/Pause Button (Lebih besar)
+              // Tombol Play/Pause.
               Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.yinMnBlue,
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
                   icon: Icon(
-                    isPlaying ? Icons.pause : Icons.play_arrow,
+                    _audioProvider.isLoading ||
+                            _audioProvider.isBuffering
+                        ? Icons.hourglass_empty
+                        : _audioProvider.isPlaying
+                            ? Icons.pause
+                            : Icons.play_arrow,
                   ),
                   color: AppColors.white,
                   iconSize: AppConstants.iconXLarge,
-                  onPressed: _togglePlayPause,
+                  onPressed: _audioProvider.isLoading
+                      ? null
+                      : _togglePlayPause,
                 ),
               ),
 
               const SizedBox(width: AppConstants.spaceSmall),
 
-              IconButton(
-                icon: const Icon(Icons.skip_next),
-                color: AppColors.white,
-                iconSize: AppConstants.iconLarge,
-                onPressed: _nextChapter,
+              // Tombol maju sesuai interval.
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Maju ${_audioProvider.skipInterval} detik',
+                    icon: const Icon(Icons.fast_forward_rounded),
+                    color: AppColors.white,
+                    iconSize: AppConstants.iconLarge,
+                    onPressed: _skipForward,
+                  ),
+                ],
               ),
 
               const SizedBox(width: AppConstants.spaceMedium),
 
-              // Playlist Button
+              // Tombol playlist.
               IconButton(
                 icon: const Icon(Icons.playlist_play),
                 color: AppColors.jordyBlue,
@@ -373,7 +371,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
           const SizedBox(height: AppConstants.spaceSmall),
 
-          // Progress Bar
           Column(
             children: [
               SliderTheme(
@@ -388,15 +385,20 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                   activeTrackColor: AppColors.jordyBlue,
                   inactiveTrackColor: AppColors.oxfordBlue,
                   thumbColor: AppColors.white,
-                  overlayColor: AppColors.jordyBlue.withValues(alpha: 0.3),
+                  overlayColor: AppColors.jordyBlue.withValues(
+                    alpha: 0.3,
+                  ),
                 ),
                 child: Slider(
                   value: progress,
-                  onChanged: _onProgressChanged,
+                  min: 0,
+                  max: 1,
+                  onChanged: _audioProvider.totalDuration.inMilliseconds > 0
+                      ? _onProgressChanged
+                      : null,
                 ),
               ),
 
-              // Timestamp
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppConstants.paddingSmall,
@@ -405,13 +407,13 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      currentTime,
+                      _audioProvider.currentTime,
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.jordyBlue,
                       ),
                     ),
                     Text(
-                      totalDuration,
+                      _audioProvider.totalTime,
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.jordyBlue,
                       ),
@@ -423,6 +425,55 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCover() {
+    final coverImage = _audioProvider.coverImage;
+
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppColors.lavender,
+        borderRadius: BorderRadius.circular(
+          AppConstants.radiusSmall,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          AppConstants.radiusSmall,
+        ),
+        child: coverImage == null || coverImage.isEmpty
+            ? const Icon(
+                Icons.menu_book,
+                color: AppColors.yinMnBlue,
+                size: AppConstants.iconLarge,
+              )
+            : coverImage.startsWith('http')
+                ? Image.network(
+                    coverImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _coverPlaceholder();
+                    },
+                  )
+                : Image.asset(
+                    coverImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _coverPlaceholder();
+                    },
+                  ),
+      ),
+    );
+  }
+
+  Widget _coverPlaceholder() {
+    return const Icon(
+      Icons.menu_book,
+      color: AppColors.yinMnBlue,
+      size: AppConstants.iconLarge,
     );
   }
 }

@@ -1,51 +1,95 @@
-import 'package:flutter/foundation.dart';
 
-/// Mengelola satu sesi audio yang digunakan bersama oleh:
-/// - MiniAudioPlayer
-/// - AudioPlayerScreen
-///
-/// Catatan:
-/// Provider ini masih berupa simulasi. Belum terhubung ke audio engine,
-/// ElevenLabs API, atau Firebase.
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:just_audio/just_audio.dart';
+
 class AudioPlayerProvider extends ChangeNotifier {
-  // Singleton agar seluruh bagian aplikasi mengakses sesi audio yang sama.
   static final AudioPlayerProvider _instance =
       AudioPlayerProvider._internal();
 
   factory AudioPlayerProvider() => _instance;
 
-  AudioPlayerProvider._internal();
+  AudioPlayerProvider._internal() {
+    _player.positionStream.listen((position) {
+      _position = position;
+      notifyListeners();
+    });
 
-  // Metadata track
+    _player.durationStream.listen((duration) {
+      _totalDuration = duration ?? Duration.zero;
+      notifyListeners();
+    });
+
+    _player.playerStateStream.listen((state) {
+      _isPlaying = state.playing;
+
+      _isLoading =
+          state.processingState == ProcessingState.loading;
+
+      _isBuffering =
+          state.processingState == ProcessingState.buffering;
+
+      if (state.processingState == ProcessingState.completed) {
+        _position = _totalDuration;
+        _isPlaying = false;
+      }
+
+      notifyListeners();
+    });
+  }
+
+  final AudioPlayer _player = AudioPlayer();
+
   String _bookTitle = '';
   String _author = '';
   String? _coverImage;
+  String? _audioUrl;
 
-  // Status pemutaran
   bool _isVisible = false;
   bool _isPlaying = false;
+  bool _isLoading = false;
+  bool _isBuffering = false;
 
-  // Progress dan durasi
+  String? _errorMessage;
+
   Duration _position = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
-  // Getters
+  double _speed = 1.0;
+
+  // Interval skip audio.
+  int _skipInterval = 15;
+
+  // Getters.
   String get bookTitle => _bookTitle;
   String get author => _author;
   String? get coverImage => _coverImage;
+  String? get audioUrl => _audioUrl;
 
   bool get isVisible => _isVisible;
   bool get isPlaying => _isPlaying;
+  bool get isLoading => _isLoading;
+  bool get isBuffering => _isBuffering;
+
+  String? get errorMessage => _errorMessage;
 
   bool get hasActiveTrack => _bookTitle.isNotEmpty;
 
   Duration get position => _position;
   Duration get totalDuration => _totalDuration;
 
-  double get progress {
-    if (_totalDuration.inMilliseconds <= 0) return 0.0;
+  double get speed => _speed;
 
-    return (_position.inMilliseconds / _totalDuration.inMilliseconds)
+  int get skipInterval => _skipInterval;
+
+  double get progress {
+    if (_totalDuration.inMilliseconds <= 0) {
+      return 0.0;
+    }
+
+    return (_position.inMilliseconds /
+            _totalDuration.inMilliseconds)
         .clamp(0.0, 1.0)
         .toDouble();
   }
@@ -53,110 +97,176 @@ class AudioPlayerProvider extends ChangeNotifier {
   String get currentTime => _formatDuration(_position);
   String get totalTime => _formatDuration(_totalDuration);
 
-  /// Memulai sesi audio baru.
-  ///
-  /// totalTime menggunakan format:
-  /// - mm:ss, contoh: 10:10
-  /// - hh:mm:ss, contoh: 01:10:10
-  void playAudio({
+  // Memuat dan memutar audio.
+  Future<void> playAudio({
     required String bookTitle,
     required String author,
     String? coverImage,
+    String? audioUrl,
+    String? audioAsset,
     String totalTime = '00:00',
-  }) {
+  }) async {
+    final normalizedUrl = audioUrl?.trim();
+    final normalizedAsset = audioAsset?.trim();
+
+    if ((normalizedUrl == null || normalizedUrl.isEmpty) &&
+        (normalizedAsset == null || normalizedAsset.isEmpty)) {
+      _errorMessage = 'Sumber audio belum tersedia.';
+      _isPlaying = false;
+      notifyListeners();
+      return;
+    }
+
     _bookTitle = bookTitle;
     _author = author;
     _coverImage = coverImage;
+    _audioUrl = normalizedUrl;
 
-    _totalDuration = _parseDuration(totalTime);
     _position = Duration.zero;
+    _totalDuration = Duration.zero;
 
     _isVisible = true;
-    _isPlaying = true;
+    _isLoading = true;
+    _isBuffering = false;
+    _isPlaying = false;
+    _errorMessage = null;
 
     notifyListeners();
+
+    try {
+      if (normalizedUrl != null && normalizedUrl.isNotEmpty) {
+        await _player.setUrl(normalizedUrl);
+      } else {
+        await _player.setAsset(normalizedAsset!);
+      }
+
+      _totalDuration = _player.duration ?? Duration.zero;
+      _position = Duration.zero;
+      _isLoading = false;
+
+      notifyListeners();
+
+      unawaited(_player.play());
+    } catch (e) {
+      _isLoading = false;
+      _isPlaying = false;
+      _errorMessage = 'Gagal memuat audio: $e';
+
+      notifyListeners();
+    }
   }
 
-  /// Mengubah status play/pause.
-  void togglePlayPause() {
+  // Play / Pause.
+  Future<void> togglePlayPause() async {
     if (!hasActiveTrack) return;
 
-    _isPlaying = !_isPlaying;
-    notifyListeners();
+    if (_isPlaying) {
+      await pause();
+    } else {
+      await resume();
+    }
   }
 
-  void pause() {
+  Future<void> pause() async {
     if (!hasActiveTrack || !_isPlaying) return;
 
-    _isPlaying = false;
-    notifyListeners();
+    await _player.pause();
   }
 
-  void resume() {
+  Future<void> resume() async {
     if (!hasActiveTrack || _isPlaying) return;
 
-    _isPlaying = true;
     _isVisible = true;
+    _errorMessage = null;
+
+    notifyListeners();
+
+    try {
+      await _player.play();
+    } catch (e) {
+      _errorMessage = 'Gagal melanjutkan audio: $e';
+      notifyListeners();
+    }
+  }
+
+  // Mengubah posisi audio.
+  Future<void> seek(Duration position) async {
+    if (!hasActiveTrack) return;
+
+    final target = Duration(
+      milliseconds: position.inMilliseconds
+          .clamp(0, _totalDuration.inMilliseconds),
+    );
+
+    await _player.seek(target);
+  }
+
+  // Skip mundur sesuai interval yang dipilih.
+  Future<void> skipBackward() async {
+    if (!hasActiveTrack) return;
+
+    await seek(
+      _position - Duration(seconds: _skipInterval),
+    );
+  }
+
+  // Skip maju sesuai interval yang dipilih.
+  Future<void> skipForward() async {
+    if (!hasActiveTrack) return;
+
+    await seek(
+      _position + Duration(seconds: _skipInterval),
+    );
+  }
+
+  // Mengatur interval skip.
+  void setSkipInterval(int value) {
+    const availableIntervals = [5, 10, 15, 30];
+
+    if (!availableIntervals.contains(value)) return;
+    if (_skipInterval == value) return;
+
+    _skipInterval = value;
     notifyListeners();
   }
 
-  /// Mengubah progress dari 0.0 sampai 1.0.
-  ///
-  /// Contoh:
-  /// updateProgress(0.5) berarti posisi audio berada di tengah durasi.
+  // Kompatibilitas dengan slider 0.0 - 1.0.
   void updateProgress(double value) {
     if (!hasActiveTrack) return;
+    if (_totalDuration.inMilliseconds <= 0) return;
 
-    final normalizedProgress = value.clamp(0.0, 1.0).toDouble();
+    final normalized = value.clamp(0.0, 1.0).toDouble();
 
-    if (_totalDuration.inMilliseconds <= 0) {
-      _position = Duration.zero;
-    } else {
-      _position = Duration(
-        milliseconds:
-            (_totalDuration.inMilliseconds * normalizedProgress).round(),
-      );
-    }
+    final target = Duration(
+      milliseconds:
+          (_totalDuration.inMilliseconds * normalized).round(),
+    );
+
+    unawaited(seek(target));
+  }
+
+  // Mengatur kecepatan pemutaran.
+  Future<void> setSpeed(double value) async {
+    if (value <= 0) return;
+
+    _speed = value;
+    await _player.setSpeed(value);
 
     notifyListeners();
   }
 
-  /// Memperbarui posisi dan durasi secara langsung.
-  ///
-  /// Berguna jika nantinya audio engine memberikan posisi aktual.
-  void updateTime(String current, String total) {
+  // Metode lama dipertahankan sementara untuk kompatibilitas.
+  Future<void> nextTrack() async {
     if (!hasActiveTrack) return;
-
-    _totalDuration = _parseDuration(total);
-    _position = _parseDuration(current);
-
-    if (_totalDuration.inMilliseconds > 0 &&
-        _position > _totalDuration) {
-      _position = _totalDuration;
-    }
-
-    notifyListeners();
+    await seek(Duration.zero);
   }
 
-  /// Placeholder untuk fitur next track.
-  /// Belum mengganti buku karena playlist belum diimplementasikan.
-  void nextTrack() {
+  Future<void> previousTrack() async {
     if (!hasActiveTrack) return;
-
-    _position = Duration.zero;
-    notifyListeners();
+    await seek(Duration.zero);
   }
 
-  /// Placeholder untuk fitur previous track.
-  /// Belum mengganti buku karena playlist belum diimplementasikan.
-  void previousTrack() {
-    if (!hasActiveTrack) return;
-
-    _position = Duration.zero;
-    notifyListeners();
-  }
-
-  /// Menyembunyikan Mini Player tanpa menghentikan sesi audio.
+  // Menyembunyikan mini player tanpa menghentikan audio.
   void closeMiniPlayer() {
     if (!_isVisible) return;
 
@@ -164,7 +274,6 @@ class AudioPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Menampilkan kembali Mini Player jika ada sesi audio.
   void showMiniPlayer() {
     if (!hasActiveTrack || _isVisible) return;
 
@@ -172,14 +281,21 @@ class AudioPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Menghentikan dan membersihkan seluruh sesi audio.
-  void stop() {
+  // Menghentikan audio dan mengosongkan sesi.
+  Future<void> stop() async {
+    await _player.stop();
+
     _bookTitle = '';
     _author = '';
     _coverImage = null;
+    _audioUrl = null;
 
     _isVisible = false;
     _isPlaying = false;
+    _isLoading = false;
+    _isBuffering = false;
+
+    _errorMessage = null;
 
     _position = Duration.zero;
     _totalDuration = Duration.zero;
@@ -187,48 +303,19 @@ class AudioPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Duration _parseDuration(String value) {
-    final parts = value.split(':');
-
-    try {
-      final numbers = parts.map((part) => int.parse(part)).toList();
-
-      if (numbers.length == 2) {
-        // mm:ss
-        return Duration(
-          minutes: numbers[0],
-          seconds: numbers[1],
-        );
-      }
-
-      if (numbers.length == 3) {
-        // hh:mm:ss
-        return Duration(
-          hours: numbers[0],
-          minutes: numbers[1],
-          seconds: numbers[2],
-        );
-      }
-    } catch (_) {
-      // Format tidak valid akan dianggap sebagai 00:00.
-    }
-
-    return Duration.zero;
-  }
-
   String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
+    final minutes =
+        duration.inMinutes.remainder(60).toString().padLeft(2, '0');
 
-    final mm = minutes.toString().padLeft(2, '0');
-    final ss = seconds.toString().padLeft(2, '0');
+    final seconds =
+        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+
+    final hours = duration.inHours;
 
     if (hours > 0) {
-      final hh = hours.toString().padLeft(2, '0');
-      return '$hh:$mm:$ss';
+      return '$hours:$minutes:$seconds';
     }
 
-    return '${duration.inMinutes.toString().padLeft(2, '0')}:$ss';
+    return '$minutes:$seconds';
   }
 }

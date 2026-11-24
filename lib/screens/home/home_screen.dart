@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../widgets/bottom_nav.dart';
+import 'library_screen.dart';
 import '../../widgets/audio_player_overlay.dart';
 import 'beranda_screen.dart';
 import '../katalog/katalog_screen.dart';
@@ -44,23 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: _onTabChanged,
           items: BukuBicaraBottomNav.defaultItems,
         ),
-      ),
-    );
-  }
-}
-
-// Placeholder Library Screen
-class LibraryScreen extends StatelessWidget {
-  const LibraryScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Perpustakaan Saya'),
-      ),
-      body: const Center(
-        child: Text('Library Screen - Coming Soon'),
       ),
     );
   }

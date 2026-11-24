@@ -1,9 +1,14 @@
+
 import 'package:flutter/material.dart';
+
+import '../../models/book_model.dart';
+import '../../services/book_service.dart';
 import '../../utils/color_palettes.dart';
 import '../../widgets/app_constants.dart';
 import '../../widgets/book_card.dart';
 import '../../widgets/book_list.dart';
 import '../../widgets/custom_text_field.dart';
+
 import 'search_screen.dart';
 import 'category_books_screen.dart';
 import '../books/detail_buku_screen.dart';
@@ -16,239 +21,10 @@ class KatalogScreen extends StatefulWidget {
 }
 
 class _KatalogScreenState extends State<KatalogScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController =
+      TextEditingController();
 
-  // Data dummy untuk kategori
-  final Map<String, List<BookCardData>> _categories = {
-    'Horror': [
-      BookCardData(
-        id: '1',
-        title: 'Seperoi Mie Ayam Setelah Mati',
-        author: 'Penulis Horror',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.5,
-        hasAudio: true,
-        category: 'Horror',
-      ),
-      BookCardData(
-        id: '2',
-        title: 'Islam ala Prabowo',
-        author: 'Penulis Horror',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.8,
-        hasAudio: false,
-        category: 'Horror',
-      ),
-      BookCardData(
-        id: '3',
-        title: 'Kursi Hitam',
-        author: 'Penulis Horror',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.2,
-        hasAudio: true,
-        category: 'Horror',
-      ),
-      BookCardData(
-        id: '4',
-        title: 'Hantu Kuntilanak',
-        author: 'Penulis Horror',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.3,
-        hasAudio: true,
-        category: 'Horror',
-      ),
-    ],
-    'Romance': [
-      BookCardData(
-        id: '5',
-        title: 'Fate Took the Long way Home',
-        author: 'Penulis Romance',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.7,
-        hasAudio: true,
-        category: 'Romance',
-      ),
-      BookCardData(
-        id: '6',
-        title: 'Dear J',
-        author: 'Penulis Romance',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.6,
-        hasAudio: false,
-        category: 'Romance',
-      ),
-      BookCardData(
-        id: '7',
-        title: 'Hujan',
-        author: 'Tere Liye',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.8,
-        hasAudio: true,
-        category: 'Romance',
-      ),
-      BookCardData(
-        id: '8',
-        title: 'Cinta Pertama',
-        author: 'Dini Amalia',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.9,
-        hasAudio: true,
-        category: 'Romance',
-      ),
-    ],
-    'Fantasy': [
-      BookCardData(
-        id: '9',
-        title: 'Laut Bercerita',
-        author: 'Leila S. Chudori',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.9,
-        hasAudio: true,
-        category: 'Fantasy',
-      ),
-      BookCardData(
-        id: '10',
-        title: 'Alice Neverland',
-        author: 'Penulis Fantasy',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.4,
-        hasAudio: false,
-        category: 'Fantasy',
-      ),
-      BookCardData(
-        id: '11',
-        title: 'Malborough Midnight',
-        author: 'Penulis Fantasy',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.3,
-        hasAudio: true,
-        category: 'Fantasy',
-      ),
-      BookCardData(
-        id: '12',
-        title: 'Bumi',
-        author: 'Tere Liye',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.8,
-        hasAudio: true,
-        category: 'Fantasy',
-      ),
-    ],
-    'History': [
-      BookCardData(
-        id: '13',
-        title: 'Janji',
-        author: 'Penulis History',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.6,
-        hasAudio: true,
-        category: 'History',
-      ),
-      BookCardData(
-        id: '14',
-        title: 'Sejarah Sumatra',
-        author: 'Penulis History',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.5,
-        hasAudio: false,
-        category: 'History',
-      ),
-      BookCardData(
-        id: '15',
-        title: 'Pulang',
-        author: 'Penulis History',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.7,
-        hasAudio: true,
-        category: 'History',
-      ),
-      BookCardData(
-        id: '16',
-        title: 'Sejarah Nusantara',
-        author: 'Prof. Dr. Slamet',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.8,
-        hasAudio: true,
-        category: 'History',
-      ),
-    ],
-    'Biography': [
-      BookCardData(
-        id: '17',
-        title: 'I.M Habibie',
-        author: 'Penulis Biography',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.8,
-        hasAudio: true,
-        category: 'Biography',
-      ),
-      BookCardData(
-        id: '18',
-        title: 'Hilang dalam Dekapan Semeru',
-        author: 'Penulis Biography',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.5,
-        hasAudio: false,
-        category: 'Biography',
-      ),
-      BookCardData(
-        id: '19',
-        title: 'Belum Selesai Tertidur',
-        author: 'Penulis Biography',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.4,
-        hasAudio: true,
-        category: 'Biography',
-      ),
-      BookCardData(
-        id: '20',
-        title: 'Kisah Hidup Soekarno',
-        author: 'Cindy Adams',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.7,
-        hasAudio: true,
-        category: 'Biography',
-      ),
-    ],
-    'Philosophy': [
-      BookCardData(
-        id: '21',
-        title: 'Filosofi Teras',
-        author: 'Henry Manampiring',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.9,
-        hasAudio: true,
-        category: 'Philosophy',
-      ),
-      BookCardData(
-        id: '22',
-        title: '375 Meja',
-        author: 'Penulis Philosophy',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.6,
-        hasAudio: false,
-        category: 'Philosophy',
-      ),
-      BookCardData(
-        id: '23',
-        title: 'Hujan Buli Juni',
-        author: 'Penulis Philosophy',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.7,
-        hasAudio: true,
-        category: 'Philosophy',
-      ),
-      BookCardData(
-        id: '24',
-        title: 'Pemikiran Timur',
-        author: 'Dr. Wijaya',
-        coverAsset: 'assets/cover-buku-hujan.jpg',
-        rating: 4.6,
-        hasAudio: true,
-        category: 'Philosophy',
-      ),
-    ],
-  };
+  final BookService _bookService = BookService();
 
   @override
   void dispose() {
@@ -256,23 +32,130 @@ class _KatalogScreenState extends State<KatalogScreen> {
     super.dispose();
   }
 
-  void _handleBookTap(BookCardData book) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const DetailBukuScreen(),
-      ),
+  // Mengubah BookModel menjadi BookCardData.
+  BookCardData _convertToBookCard(BookModel book) {
+    return BookCardData(
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      coverUrl: book.coverUrl,
+      coverAsset: 'assets/cover-buku-hujan.jpg',
+      rating: book.rating,
+      hasAudio: book.hasAudio,
+      category: book.category,
     );
   }
 
-  void _handleSeeAllCategory(String category) {
-    final categoryBooks = _categories[category] ?? [];
+  // Mengelompokkan buku berdasarkan kategori.
+  Map<String, List<BookCardData>> _groupBooksByCategory(
+    List<BookModel> books,
+  ) {
+    final Map<String, List<BookCardData>> categories = {};
+
+    for (final book in books) {
+      final category = book.category.trim().isEmpty
+          ? 'Lainnya'
+          : book.category;
+
+      categories.putIfAbsent(category, () => []);
+      categories[category]!.add(_convertToBookCard(book));
+    }
+
+    return categories;
+  }
+
+  
+  Future<void> _handleBookTap(BookCardData selectedBook) async {
+    try {
+      // Ambil data lengkap buku berdasarkan ID Firestore.
+      final book = await _bookService.getBookById(selectedBook.id);
+
+      if (!mounted) return;
+
+      if (book == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data buku tidak ditemukan.'),
+          ),
+        );
+        return;
+      }
+
+      // Buka halaman detail dengan data buku yang dipilih.
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DetailBukuScreen(book: book),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memuat detail buku. Silakan coba lagi.'),
+        ),
+      );
+    }
+  }
+
+
+  void _handleSeeAllCategory(
+    String category,
+    List<BookCardData> books,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CategoryBooksScreen(
           category: category,
-          initialBooks: categoryBooks,
+          initialBooks: books,
+        ),
+      ),
+    );
+  }
+
+  // Tampilan ketika belum ada buku.
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppConstants.paddingNormal),
+        child: Text(
+          'Belum ada buku yang tersedia.',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  // Tampilan ketika terjadi error.
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(
+          AppConstants.paddingNormal,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 40,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Gagal memuat katalog buku.',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -285,9 +168,11 @@ class _KatalogScreenState extends State<KatalogScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Search bar section
+            // Search bar section.
             Padding(
-              padding: const EdgeInsets.all(AppConstants.paddingNormal),
+              padding: const EdgeInsets.all(
+                AppConstants.paddingNormal,
+              ),
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -306,26 +191,63 @@ class _KatalogScreenState extends State<KatalogScreen> {
               ),
             ),
 
-            // Kategori list with horizontal scroll - Using BookSection
+            // Mengambil data buku dari Cloud Firestore.
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(
-                  bottom: AppConstants.paddingXLarge,
-                ),
-                children: _categories.entries.map((entry) {
-                  return Padding(
+              child: StreamBuilder<List<BookModel>>(
+                stream: _bookService.getPublishedBooks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return _buildErrorState(
+                      snapshot.error.toString(),
+                    );
+                  }
+
+                  final books = snapshot.data ?? [];
+
+                  if (books.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  final categories =
+                      _groupBooksByCategory(books);
+
+                  final categoryNames =
+                      categories.keys.toList()..sort();
+
+                  return ListView(
                     padding: const EdgeInsets.only(
-                      bottom: AppConstants.spaceLarge,
+                      bottom: AppConstants.paddingXLarge,
                     ),
-                    child: BookSection(
-                      title: entry.key,
-                      books: entry.value,
-                      cardSize: BookCardSize.small,
-                      onBookTap: _handleBookTap,
-                      onSeeAll: () => _handleSeeAllCategory(entry.key),
-                    ),
+                    children: categoryNames.map((category) {
+                      final categoryBooks =
+                          categories[category]!;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppConstants.spaceLarge,
+                        ),
+                        child: BookSection(
+                          title: category,
+                          books: categoryBooks,
+                          cardSize: BookCardSize.small,
+                          onBookTap: _handleBookTap,
+                          onSeeAll: () =>
+                              _handleSeeAllCategory(
+                            category,
+                            categoryBooks,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   );
-                }).toList(),
+                },
               ),
             ),
           ],

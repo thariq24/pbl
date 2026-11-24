@@ -1,11 +1,15 @@
+
 import 'dart:async';
 import 'package:flutter/material.dart';
+
+import '../../providers/audio_player_provider.dart';
 
 class PengaturanAudioScreen extends StatefulWidget {
   const PengaturanAudioScreen({super.key});
 
   @override
-  State<PengaturanAudioScreen> createState() => _PengaturanAudioScreenState();
+  State<PengaturanAudioScreen> createState() =>
+      _PengaturanAudioScreenState();
 }
 
 class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
@@ -13,12 +17,32 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
   static const Color background = Color(0xFFF5F7FC);
   static const Color accent = Color(0xFFD9E1F1);
 
+  final AudioPlayerProvider _audioProvider = AudioPlayerProvider();
+
   double _kecepatan = 1.0;
-  int _interval = 15;
   int? _sleepTimer;
   bool _timerAktif = false;
   bool _hentikanDiAkhirBab = false;
   Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _kecepatan = _audioProvider.speed;
+  }
+
+  void _ubahKecepatan(double value) {
+    setState(() {
+      _kecepatan = value;
+    });
+
+    unawaited(_audioProvider.setSpeed(value));
+  }
+
+  void _ubahInterval(int detik) {
+    _audioProvider.setSkipInterval(detik);
+    setState(() {});
+  }
 
   void _aturSleepTimer(int? menit) {
     _timer?.cancel();
@@ -40,8 +64,8 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Waktu tidur selesai. Hubungkan aksi ini ke audio player '
-              'untuk menghentikan audio.',
+              'Waktu tidur selesai. Penghentian audio '
+              'belum dihubungkan.',
             ),
           ),
         );
@@ -54,14 +78,18 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
 
     setState(() {
       _kecepatan = 1.0;
-      _interval = 15;
       _sleepTimer = null;
       _timerAktif = false;
       _hentikanDiAkhirBab = false;
     });
 
+    unawaited(_audioProvider.setSpeed(1.0));
+    _audioProvider.setSkipInterval(15);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pengaturan dikembalikan ke default.')),
+      const SnackBar(
+        content: Text('Pengaturan dikembalikan ke default.'),
+      ),
     );
   }
 
@@ -123,7 +151,10 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
                       SizedBox(height: 5),
                       Text(
                         'Sesuaikan pemutaran audio sesuai kebutuhanmu.',
-                        style: TextStyle(color: Colors.black54, height: 1.4),
+                        style: TextStyle(
+                          color: Colors.black54,
+                          height: 1.4,
+                        ),
                       ),
                     ],
                   ),
@@ -161,9 +192,7 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
                   divisions: 15,
                   activeColor: navy,
                   label: '${_kecepatan.toStringAsFixed(2)}x',
-                  onChanged: (value) {
-                    setState(() => _kecepatan = value);
-                  },
+                  onChanged: _ubahKecepatan,
                 ),
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -175,8 +204,8 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Kecepatan yang dipilih akan diterapkan saat '
-                  'pengaturan dihubungkan ke pemutar audio.',
+                  'Perubahan kecepatan langsung diterapkan '
+                  'pada pemutaran audio.',
                   style: TextStyle(color: Colors.black54, fontSize: 12),
                 ),
               ],
@@ -204,43 +233,33 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
                   spacing: 10,
                   runSpacing: 10,
                   children: [5, 10, 15, 30].map((detik) {
-                    final selected = _interval == detik;
+                    final selected =
+                        _audioProvider.skipInterval == detik;
 
                     return ChoiceChip(
                       label: Text('$detik detik'),
                       selected: selected,
                       selectedColor: accent,
-                      onSelected: (_) {
-                        setState(() => _interval = detik);
-                      },
+                      onSelected: (_) => _ubahInterval(detik),
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _showInfo('Mundur $_interval detik'),
-                        icon: const Icon(Icons.replay_10),
-                        label: const Text('Mundur'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _showInfo('Maju $_interval detik'),
-                        icon: const Icon(Icons.forward_10),
-                        label: const Text('Maju'),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                Text(
+                  'Interval aktif: ${_audioProvider.skipInterval} detik',
+                  style: const TextStyle(
+                    color: navy,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Tombol di atas masih berupa contoh interaksi UI, '
-                  'belum mengubah posisi audio.',
-                  style: TextStyle(color: Colors.black54, fontSize: 12),
+                  'Pengaturan ini akan digunakan oleh tombol '
+                  'mundur dan maju pada pemutar audio.',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -339,8 +358,8 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
-                      'Pengaturan aktif pada halaman ini. '
-                      'Penyimpanan permanen belum tersedia.',
+                      'Pengaturan kecepatan dan interval '
+                      'telah diterapkan.',
                     ),
                   ),
                 );
@@ -376,12 +395,6 @@ class _PengaturanAudioScreenState extends State<PengaturanAudioScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: child,
-    );
-  }
-
-  void _showInfo(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$message (contoh UI, audio belum terhubung)')),
     );
   }
 }

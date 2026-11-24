@@ -1,13 +1,17 @@
+
 import 'package:flutter/material.dart';
-import '../../widgets/app_constants.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../models/book_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/book_service.dart';
 import '../../utils/text_styles.dart';
 import '../../utils/color_palettes.dart';
+import '../../widgets/app_constants.dart';
 import '../../widgets/book_card.dart';
 import '../../widgets/book_list.dart';
 import 'all_books_screen.dart';
 import '../books/detail_buku_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/auth_service.dart';
 
 class BerandaScreen extends StatefulWidget {
   const BerandaScreen({super.key});
@@ -17,117 +21,99 @@ class BerandaScreen extends StatefulWidget {
 }
 
 class _BerandaScreenState extends State<BerandaScreen> {
-  // Dummy data untuk buku populer
-  final List<BookCardData> _popularBooks = [
-    BookCardData(
-      id: '1',
-      title: 'Filosofi Teras',
-      author: 'Henry Manampiring',
-      rating: 4.9,
-      category: 'Philosophy',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: true,
-    ),
-    BookCardData(
-      id: '2',
-      title: 'Laut Bercerita',
-      author: 'Leila S. Chudori',
-      rating: 4.8,
-      category: 'Fiction',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: true,
-    ),
-    BookCardData(
-      id: '3',
-      title: 'Hujan',
-      author: 'Tere Liye',
-      rating: 4.7,
-      category: 'Romance',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: true,
-    ),
-    BookCardData(
-      id: '4',
-      title: 'Bumi',
-      author: 'Tere Liye',
-      rating: 4.8,
-      category: 'Fantasy',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: true,
-    ),
-  ];
-
   final AuthService _authService = AuthService();
+  final BookService _bookService = BookService();
 
-  // Dummy data untuk buku terbaru
-  final List<BookCardData> _recentBooks = [
-    BookCardData(
-      id: '5',
-      title: 'Cinta di Musim Hujan',
-      author: 'Siti Nurhaliza',
-      rating: 4.6,
-      category: 'Romance',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: true,
-    ),
-    BookCardData(
-      id: '6',
-      title: 'Petualangan Naga',
-      author: 'Ahmad Fauzi',
-      rating: 4.5,
-      category: 'Fantasy',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: false,
-    ),
-    BookCardData(
-      id: '7',
-      title: 'Sejarah Nusantara',
-      author: 'Prof. Dr. Slamet',
-      rating: 4.8,
-      category: 'History',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: true,
-    ),
-    BookCardData(
-      id: '8',
-      title: 'Kisah Hidup Soekarno',
-      author: 'Cindy Adams',
-      rating: 4.7,
-      category: 'Biography',
-      coverAsset: 'assets/cover-buku-hujan.jpg',
-      hasAudio: true,
-    ),
-  ];
-
-  void _handleBookTap(BookCardData book) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const DetailBukuScreen(),
-      ),
+  // Mengubah BookModel menjadi data untuk tampilan kartu buku.
+  BookCardData _convertToBookCard(BookModel book) {
+    return BookCardData(
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      coverUrl: book.coverUrl,
+      rating: book.rating,
+      category: book.category,
+      hasAudio: book.hasAudio,
     );
   }
 
-  void _handleSeeAllPopular() {
+  // Membuka detail buku berdasarkan ID Firestore.
+  Future<void> _handleBookTap(BookCardData selectedBook) async {
+    try {
+      final book = await _bookService.getBookById(selectedBook.id);
+
+      if (!mounted) return;
+
+      if (book == null || !book.isPublished) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Buku tidak ditemukan atau belum dipublikasikan.'),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DetailBukuScreen(book: book),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memuat detail buku. Silakan coba lagi.'),
+        ),
+      );
+    }
+  }
+
+  // Navigasi ke seluruh buku populer.
+  void _handleSeeAllPopular(List<BookCardData> books) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AllBooksScreen(
           listType: BookListType.popular,
-          initialBooks: _popularBooks,
+          initialBooks: books,
         ),
       ),
     );
   }
 
-  void _handleSeeAllRecent() {
+  // Navigasi ke seluruh buku terbaru.
+  void _handleSeeAllRecent(List<BookCardData> books) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AllBooksScreen(
           listType: BookListType.recent,
-          initialBooks: _recentBooks,
+          initialBooks: books,
         ),
+      ),
+    );
+  }
+
+  // Tampilan ketika data buku gagal dimuat.
+  Widget _buildBookError() {
+    return const Padding(
+      padding: EdgeInsets.all(AppConstants.paddingNormal),
+      child: Text(
+        'Gagal memuat daftar buku. Periksa koneksi internet Anda.',
+        style: TextStyle(color: Colors.red),
+      ),
+    );
+  }
+
+  // Tampilan ketika belum ada buku yang dipublikasikan.
+  Widget _buildEmptyBooks() {
+    return const Padding(
+      padding: EdgeInsets.all(AppConstants.paddingNormal),
+      child: Text(
+        'Belum ada buku yang dipublikasikan.',
+        style: TextStyle(color: AppColors.spaceCadet),
       ),
     );
   }
@@ -141,45 +127,48 @@ class _BerandaScreenState extends State<BerandaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              
-            // Header Section
-            Container(
-              padding: const EdgeInsets.all(AppConstants.paddingNormal),
-              child: StreamBuilder<User?>(
-                stream: _authService.userChanges,
-                builder: (context, snapshot) {
-                  final displayName = snapshot.data?.displayName?.trim();
+              // Header Section
+              Container(
+                padding: const EdgeInsets.all(
+                  AppConstants.paddingNormal,
+                ),
+                child: StreamBuilder<User?>(
+                  stream: _authService.userChanges,
+                  builder: (context, snapshot) {
+                    final displayName =
+                        snapshot.data?.displayName?.trim();
 
-                  final greeting = displayName != null && displayName.isNotEmpty
-                      ? 'Halo, $displayName!'
-                      : 'Selamat Datang!';
+                    final greeting =
+                        displayName != null && displayName.isNotEmpty
+                            ? 'Halo, $displayName!'
+                            : 'Selamat Datang!';
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: AppConstants.spaceSmall),
-
-                      Text(
-                        greeting,
-                        style: AppTextStyles.h2.copyWith(
-                          color: AppColors.oxfordBlue,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(
+                          height: AppConstants.spaceSmall,
                         ),
-                      ),
-
-                      const SizedBox(height: AppConstants.spaceXSmall),
-
-                      Text(
-                        'Senang melihatmu kembali. Yuk, temukan audiobook menarik!',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.spaceCadet,
+                        Text(
+                          greeting,
+                          style: AppTextStyles.h2.copyWith(
+                            color: AppColors.oxfordBlue,
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        const SizedBox(
+                          height: AppConstants.spaceXSmall,
+                        ),
+                        Text(
+                          'Senang melihatmu kembali. Yuk, temukan audiobook menarik!',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.spaceCadet,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-
 
               const SizedBox(height: AppConstants.spaceSmall),
 
@@ -188,14 +177,21 @@ class _BerandaScreenState extends State<BerandaScreen> {
                 margin: const EdgeInsets.symmetric(
                   horizontal: AppConstants.paddingNormal,
                 ),
-                padding: const EdgeInsets.all(AppConstants.paddingLarge),
+                padding: const EdgeInsets.all(
+                  AppConstants.paddingLarge,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppColors.yinMnBlue, AppColors.jordyBlue],
+                    colors: [
+                      AppColors.yinMnBlue,
+                      AppColors.jordyBlue,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.radiusLarge,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -209,22 +205,32 @@ class _BerandaScreenState extends State<BerandaScreen> {
                               color: AppColors.white,
                             ),
                           ),
-                          const SizedBox(height: AppConstants.spaceXSmall),
+                          const SizedBox(
+                            height: AppConstants.spaceXSmall,
+                          ),
                           Text(
                             'Nikmati berbagai audiobook berkualitas',
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.white.withValues(alpha: 0.9),
+                              color: AppColors.white.withValues(
+                                alpha: 0.9,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: AppConstants.spaceMedium),
+                    const SizedBox(
+                      width: AppConstants.spaceMedium,
+                    ),
                     Container(
-                      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                      padding: const EdgeInsets.all(
+                        AppConstants.paddingMedium,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusMedium,
+                        ),
                       ),
                       child: const Icon(
                         Icons.headphones,
@@ -238,24 +244,86 @@ class _BerandaScreenState extends State<BerandaScreen> {
 
               const SizedBox(height: AppConstants.spaceLarge),
 
-              // Buku Populer Section - Using BookSection
-              BookSection(
-                title: 'Buku Populer',
-                books: _popularBooks,
-                cardSize: BookCardSize.small,
-                onBookTap: _handleBookTap,
-                onSeeAll: _handleSeeAllPopular,
-              ),
+              // Firestore Book Sections
+              StreamBuilder<List<BookModel>>(
+                stream: _bookService.getPublishedBooks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                          ConnectionState.waiting &&
+                      !snapshot.hasData) {
+                    return const Padding(
+                      padding: EdgeInsets.all(
+                        AppConstants.paddingLarge,
+                      ),
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
 
-              const SizedBox(height: AppConstants.spaceLarge),
+                  if (snapshot.hasError) {
+                    return _buildBookError();
+                  }
 
-              // Buku Terbaru Section - Using BookSection
-              BookSection(
-                title: 'Buku Terbaru',
-                books: _recentBooks,
-                cardSize: BookCardSize.small,
-                onBookTap: _handleBookTap,
-                onSeeAll: _handleSeeAllRecent,
+                  final books = snapshot.data ?? [];
+
+                  if (books.isEmpty) {
+                    return _buildEmptyBooks();
+                  }
+
+                  // Buku populer: rating tertinggi.
+                  final popularModels = List<BookModel>.from(books)
+                    ..sort(
+                      (a, b) =>
+                          (b.rating ?? 0).compareTo(a.rating ?? 0),
+                    );
+
+                  // Buku terbaru: tanggal publikasi terbaru.
+                  final recentModels = List<BookModel>.from(books)
+                    ..sort(
+                      (a, b) =>
+                          (b.createdAt ??
+                                  DateTime.fromMillisecondsSinceEpoch(0))
+                              .compareTo(
+                            a.createdAt ??
+                                DateTime.fromMillisecondsSinceEpoch(0),
+                          ),
+                    );
+
+                  final popularBooks =
+                      popularModels.map(_convertToBookCard).toList();
+
+                  final recentBooks =
+                      recentModels.map(_convertToBookCard).toList();
+
+                  return Column(
+                    children: [
+                      // Buku Populer
+                      BookSection(
+                        title: 'Buku Populer',
+                        books: popularBooks,
+                        cardSize: BookCardSize.small,
+                        onBookTap: _handleBookTap,
+                        onSeeAll: () =>
+                            _handleSeeAllPopular(popularBooks),
+                      ),
+
+                      const SizedBox(
+                        height: AppConstants.spaceLarge,
+                      ),
+
+                      // Buku Terbaru
+                      BookSection(
+                        title: 'Buku Terbaru',
+                        books: recentBooks,
+                        cardSize: BookCardSize.small,
+                        onBookTap: _handleBookTap,
+                        onSeeAll: () =>
+                            _handleSeeAllRecent(recentBooks),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: AppConstants.paddingXLarge),
